@@ -7,6 +7,9 @@ jobs:
   codegen:
     runs-on: ubuntu-latest
 
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -19,24 +22,22 @@ jobs:
       - name: Install Amplify CLI
         run: npm install -g @aws-amplify/cli
 
-      - name: Set Node memory
-        run: echo "NODE_OPTIONS=--max-old-space-size=8192" >> $GITHUB_ENV
+      # ✅ Proper AWS credential setup (persists across all steps)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Verify AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+      - name: Verify AWS identity
         run: aws sts get-caller-identity
 
       - name: Download GraphQL schema from AppSync
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           mkdir -p lib/graphql
           aws appsync get-introspection-schema \
             --api-id opneacbjcnamhlztju3jf26j64 \
-            --region $AWS_REGION \
             --format SDL \
             lib/graphql/schema.graphql
 
