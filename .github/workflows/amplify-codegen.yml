@@ -1,4 +1,4 @@
-name: GraphQL Model Codegen (AppSync)
+name: GraphQL Model Codegen (Flutter, No Flutter Install)
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
       - name: Install Amplify CLI
         run: npm install -g @aws-amplify/cli
 
-      # ✅ Proper AWS credential setup (persists across all steps)
+      # ✅ AWS credentials (persist across steps)
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,19 +33,26 @@ jobs:
       - name: Verify AWS identity
         run: aws sts get-caller-identity
 
-      - name: Download GraphQL schema from AppSync
+      # ----------------------------
+      # AppSync schema → data/lib/graphql
+      # ----------------------------
+      - name: Download GraphQL schema
         run: |
-          mkdir -p lib/graphql
+          mkdir -p data/lib/graphql
           aws appsync get-introspection-schema \
             --api-id opneacbjcnamhlztju3jf26j64 \
             --format SDL \
-            lib/graphql/schema.graphql
+            data/lib/graphql/schema.graphql
 
       - name: Add scalar types
         run: |
-          sed -i '1s/^/scalar AWSJSON\nscalar AWSDateTime\n\n/' lib/graphql/schema.graphql
+          sed -i '1s/^/scalar AWSJSON\nscalar AWSDateTime\n\n/' data/lib/graphql/schema.graphql
 
-      - name: Generate models
+      # ----------------------------
+      # IMPORTANT: run from data/
+      # ----------------------------
+      - name: Generate Flutter models
+        working-directory: data
         run: |
           npx @aws-amplify/cli codegen models \
             --model-schema lib/graphql/schema.graphql \
@@ -56,6 +63,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add lib/models lib/graphql/schema.graphql
-          git diff --cached --quiet || git commit -m "Generate GraphQL models from AppSync"
+          git add data/lib/models data/lib/graphql/schema.graphql
+          git diff --cached --quiet || git commit -m "Generate Flutter models from AppSync"
           git push
