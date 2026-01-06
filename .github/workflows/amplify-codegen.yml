@@ -16,9 +16,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Install Amplify CLI
         run: npm install -g @aws-amplify/cli
 
@@ -33,7 +30,7 @@ jobs:
         run: |
           amplify pull --yes \
             --appId opneacbjcnamhlztju3jf26j64 \
-            --envName qa
+            --envName dev
 
       - name: Generate models
         run: amplify codegen models
